@@ -24,3 +24,111 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Shimmer effect for credits display */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%)
+  }
+
+  100% {
+    transform: translateX(100%)
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Fade up and out animation for credit changes */
+.animate-fadeUpOut {
+  animation: fadeUpOut 2s forwards;
+}
+
+@keyframes fadeUpOut {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-10px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* Flash animation for attention-grabbing elements */
+@keyframes flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-flash {
+  animation: flash 0.5s infinite;
+}
+
+/* Slow pulse animation for subtle effects */
+.animate-pulse-slow {
+  animation: pulse 3s infinite;
+}
+
+/* Slot machine reel spinning animation */
+@keyframes spinReel {
+  0% {
+    transform: translateY(0);
+  }
+
+  100% {
+    transform: translateY(-2800px);
+  }
+}
+
+.animate-spinReel {
+  animation: spinReel 4s linear infinite;
+}
+
+/* Symbol appearance animation when reel stops */
+@keyframes symbolAppear {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+    filter: blur(10px);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.animate-symbolAppear {
+  animation: symbolAppear 0.5s ease-out forwards;
+}
+
+/* Symbol glow effect animation */
+@keyframes symbolGlow {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-symbolGlow {
+  animation: symbolGlow 2s ease-in-out infinite;
+}
