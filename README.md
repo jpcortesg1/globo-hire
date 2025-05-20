@@ -1,5 +1,10 @@
 # 🎰 Online Slot Machine Challenge (Next.js Edition)
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-globo--hire--2t5f.vercel.app-green?style=for-the-badge&logo=vercel)](https://globo-hire-2t5f.vercel.app/)
+
+**Try the production app here:**
+👉 [https://globo-hire-2t5f.vercel.app/](https://globo-hire-2t5f.vercel.app/)
+
 A full-stack implementation of an online slot machine game with a twist: **the house always wins!**  
 This project demonstrates professional frontend and backend development using **Next.js 13+ (App Router, TypeScript, React, Tailwind CSS)**, with a focus on clean architecture, robust business logic, and a polished casino-like user experience.
 
