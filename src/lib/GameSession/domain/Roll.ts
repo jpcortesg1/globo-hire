@@ -54,7 +54,6 @@ export class Roll {
     if (!this.isWinningCombination()) {
       return 0;
     }
-    
     return this._symbols[0].getValue();
   }
 

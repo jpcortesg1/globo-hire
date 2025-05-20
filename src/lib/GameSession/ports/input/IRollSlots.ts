@@ -7,12 +7,14 @@ export interface IRollSlotsInput {
 
 /**
  * Output/result of a slot roll operation.
+ * winAmount is present only if the roll is a win.
  */
 export interface IRollSlotsOutput {
   symbols: [string, string, string];
   isWin: boolean;
   credits: number;
   message?: string;
+  winAmount?: number;
 }
 
 /**
