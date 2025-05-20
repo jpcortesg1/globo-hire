@@ -1,6 +1,7 @@
 import { IGameSessionRepository } from '../ports/output/IGameSessionRepository';
 import { IRandomGenerator } from '../ports/output/IRandomGenerator';
 import { IRollSlots, IRollSlotsInput, IRollSlotsOutput } from '../ports/input/IRollSlots';
+import { Symbol } from '../domain/Symbol';
 
 /**
  * Application service for handling slot machine rolls, reroll logic, and win calculation.
@@ -16,6 +17,7 @@ export class RollSlots implements IRollSlots {
    * Throws if the session is not found, not active, or credits are insufficient.
    */
   async execute(input: IRollSlotsInput): Promise<IRollSlotsOutput> {
+    console.log('Executing roll for session:', input.sessionId);
     const session = await this.sessionRepository.findById(input.sessionId);
     if (!session) {
       throw new Error('Session not found');
@@ -41,20 +43,15 @@ export class RollSlots implements IRollSlots {
         } while (finalSymbols.every(s => s.getType() === finalSymbols[0].getType()));
       }
     }
-    const finalAllEqual = finalSymbols.every(s => s.getType() === finalSymbols[0].getType());
-    let winAmount = 0;
-    // If the final result is a win, increase credits and set win amount
-    if (finalAllEqual) {
-      winAmount = finalSymbols[0].getValue();
-      session.increaseCredits(winAmount);
-    }
+    // Add the roll to the session's game history and handle win logic
+    const roll = session.addRoll(finalSymbols as [Symbol, Symbol, Symbol], wasRerolled);
     await this.sessionRepository.update(session);
     return {
       symbols: finalSymbols.map(s => s.getType()) as [string, string, string],
-      isWin: finalAllEqual,
+      isWin: roll.isWinningCombination(),
       credits: session.getCredits(),
-      message: finalAllEqual ? `You won ${winAmount} credits!` : undefined,
-      winAmount: finalAllEqual ? winAmount : undefined,
+      message: roll.isWinningCombination() ? `You won ${roll.getWinAmount()} credits!` : undefined,
+      winAmount: roll.isWinningCombination() ? roll.getWinAmount() : undefined,
     };
   }
 }

@@ -49,12 +49,9 @@ export class GameSession {
       throw new Error('Cannot add a roll to an inactive session');
     }
 
-    if (this._credits < 1) {
+    if (this._credits < 0) {
       throw new Error('Insufficient credits to play');
     }
-
-    // Deduct the cost of the roll
-    this._credits -= 1;
 
     // Create the Roll object
     const roll = new Roll(
