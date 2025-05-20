@@ -8,7 +8,7 @@ const TOKEN_SECRET = process.env.TOKEN_SECRET || 'development-secret-key-min-32-
 const COOKIE_NAME = 'slot-machine-session';
 
 /**
- * Higher-order function to wrap API route handlers with session management.
+ * Middleware to wrap API route handlers with session management.
  * Adds getSessionId and setSessionId methods to the request object for handling session tokens via cookies.
  * @param handler The API route handler to wrap.
  */

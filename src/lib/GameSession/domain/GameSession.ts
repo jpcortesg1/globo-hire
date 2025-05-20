@@ -1,21 +1,177 @@
-// Possible symbols that can appear on the slot machine reels.
-export type Symbol = 'C' | 'L' | 'O' | 'W';
+// Domain model representing a user's slot machine game session
+import { Roll } from './Roll';
+import { Symbol } from './Symbol';
 
-// Represents a single roll/spin in the slot machine game.
-export interface Roll {
-  symbols: [Symbol, Symbol, Symbol]; // The result of the roll (three symbols)
-  isWin: boolean;                   // Whether the roll was a winning roll
-  credits: number;                  // Credits after this roll
-  timestamp: string;                // When the roll occurred
-  wasRerolled?: boolean;            // Optional: whether this roll was a reroll
-}
+export class GameSession {
+  private _gameHistory: Roll[] = [];
+  private _lastUpdated: Date;
 
-// Represents a user's game session in the slot machine game.
-export interface GameSession {
-  id: string;           // Unique identifier for the session
-  credits: number;      // Current credits available to the player
-  createdAt: Date;      // When the session was created
-  lastUpdated: Date;    // When the session was last updated
-  gameHistory: Roll[];  // History of all rolls in this session
-  isActive: boolean;    // Whether the session is currently active
+  constructor(
+    private readonly _id: string,
+    private _credits: number = 10,
+    private readonly _createdAt: Date = new Date(),
+    private _isActive: boolean = true
+  ) {
+    this._lastUpdated = _createdAt;
+  }
+
+  // Getters for session properties
+  public getId(): string {
+    return this._id;
+  }
+
+  public getCredits(): number {
+    return this._credits;
+  }
+
+  public getCreatedAt(): Date {
+    return this._createdAt;
+  }
+
+  public getLastUpdated(): Date {
+    return this._lastUpdated;
+  }
+
+  public getGameHistory(): ReadonlyArray<Roll> {
+    return [...this._gameHistory];
+  }
+
+  public isActive(): boolean {
+    return this._isActive;
+  }
+
+  /**
+   * Adds a new roll to the session, updates credits, and handles win logic.
+   * Throws if the session is inactive or credits are insufficient.
+   */
+  public addRoll(symbols: [Symbol, Symbol, Symbol], wasRerolled: boolean = false): Roll {
+    if (!this._isActive) {
+      throw new Error('Cannot add a roll to an inactive session');
+    }
+
+    if (this._credits < 1) {
+      throw new Error('Insufficient credits to play');
+    }
+
+    // Deduct the cost of the roll
+    this._credits -= 1;
+
+    // Create the Roll object
+    const roll = new Roll(
+      symbols,
+      this._credits,
+      new Date(),
+      wasRerolled
+    );
+
+    // If it's a winning combination, add credits
+    if (roll.isWinningCombination()) {
+      this._credits += roll.getWinAmount();
+    }
+
+    // Add the roll to the history
+    this._gameHistory.push(roll);
+    
+    // Update timestamp
+    this._lastUpdated = new Date();
+
+    return roll;
+  }
+
+  /**
+   * Deactivates the session, preventing further play.
+   */
+  public deactivate(): void {
+    this._isActive = false;
+    this._lastUpdated = new Date();
+  }
+
+  /**
+   * Increases the player's credits by a positive amount.
+   */
+  public increaseCredits(amount: number): void {
+    if (amount <= 0) {
+      throw new Error('Credit increment must be positive');
+    }
+
+    this._credits += amount;
+    this._lastUpdated = new Date();
+  }
+
+  /**
+   * Decreases the player's credits by a positive amount, if sufficient credits exist.
+   */
+  public decreaseCredits(amount: number): void {
+    if (amount <= 0) {
+      throw new Error('Credit decrement must be positive');
+    }
+
+    if (this._credits < amount) {
+      throw new Error('Insufficient credits');
+    }
+
+    this._credits -= amount;
+    this._lastUpdated = new Date();
+  }
+
+  /**
+   * Ends the session and returns the remaining credits to the player.
+   */
+  public cashOut(): number {
+    if (!this._isActive) {
+      throw new Error('Cannot cash out from an inactive session');
+    }
+    
+    const creditsToReturn = this._credits;
+    this._credits = 0;
+    this.deactivate();
+    
+    return creditsToReturn;
+  }
+
+  /**
+   * Determines if the system should force a reroll (cheat) based on credits.
+   * Returns true if cheating should occur.
+   */
+  public shouldCheat(): boolean {
+    if (this._credits < 40) {
+      return false; // No cheating below 40 credits
+    } else if (this._credits <= 60) {
+      return Math.random() < 0.3; // 30% chance to cheat
+    } else {
+      return Math.random() < 0.6; // 60% chance to cheat
+    }
+  }
+
+  /**
+   * Serializes the session for persistence or transmission.
+   */
+  public toJSON() {
+    return {
+      id: this._id,
+      credits: this._credits,
+      createdAt: this._createdAt.toISOString(),
+      lastUpdated: this._lastUpdated.toISOString(),
+      gameHistory: this._gameHistory.map(roll => roll.toJSON()),
+      isActive: this._isActive
+    };
+  }
+
+  /**
+   * Reconstructs a GameSession from persisted data.
+   * Note: Game history is not fully reconstructed for simplicity.
+   */
+  public static fromJSON(data: any): GameSession {
+    const session = new GameSession(
+      data.id,
+      data.credits,
+      new Date(data.createdAt),
+      data.isActive
+    );
+    
+    session._lastUpdated = new Date(data.lastUpdated);
+    
+    // Note: In a full implementation, rolls should be reconstructed as well.
+    return session;
+  }
 }
