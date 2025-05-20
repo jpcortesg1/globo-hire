@@ -21,30 +21,26 @@ export default withSessionRoute(async function handler(req: NextApiRequest, res:
       return res.status(401).json({ message: 'Unauthorized', success: false });
     }
 
-    const result = await gameController.roll(sessionId)
+    const result = await gameController.roll(sessionId);
     return res.status(200).json({ result, success: true });
   } catch (error) {
-    console.error('Error al realizar la tirada:', error);
-
-    // Comprobar tipo específico de error para dar respuesta adecuada
+    console.error('Error processing roll:', error);
     if (error instanceof Error) {
-      if (error.message === 'Créditos insuficientes') {
+      if (error.message === 'Insufficient credits') {
         return res.status(400).json({
           success: false,
-          error: 'No tienes suficientes créditos para jugar'
+          error: 'You do not have enough credits to play.'
         });
-      } else if (error.message === 'Sesión no encontrada' || error.message === 'La sesión no está activa') {
+      } else if (error.message === 'Session not found' || error.message === 'Session is not active') {
         return res.status(401).json({
           success: false,
-          error: 'Sesión no válida'
+          error: 'Session is not valid.'
         });
       }
     }
-
-    // Error genérico
     return res.status(500).json({
       success: false,
-      error: 'Error al procesar la tirada'
+      error: 'Error processing roll.'
     });
   }
-})
+});

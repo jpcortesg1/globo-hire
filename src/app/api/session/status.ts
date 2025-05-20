@@ -18,18 +18,19 @@ export default withSessionRoute(async function handler(req: NextApiRequest, res:
     return res.status(200).json({
       success: true,
       status: result.session.toJSON(),
+      message: result.message,
     });
   } catch (error) {
     console.error('Error retrieving session status:', error);
     if (error instanceof Error && error.message === 'Session not found') {
       return res.status(401).json({
         success: false,
-        error: 'Session not valid'
+        error: 'Session is not valid.'
       });
     }
     return res.status(500).json({
       success: false,
-      error: 'Error retrieving session status'
+      error: 'Error retrieving session status.'
     });
   }
-})
+});
