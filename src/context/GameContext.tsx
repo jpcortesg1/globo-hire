@@ -14,6 +14,7 @@ interface GameContextType {
   gameActive: boolean;
   symbols: string[];
   spinning: boolean;
+  gameAlert: string | null;
   startGame: () => Promise<void>;
   updateSession: () => Promise<Session | null>;
   endSession: (message?: string) => Promise<void>;
@@ -35,7 +36,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [gameActive, setGameActive] = useState(false);
   const [symbols, setSymbols] = useState<string[]>(['', '', '']);
   const [spinning, setSpinning] = useState(false);
-
+  const [gameAlert, setGameAlert] = useState<string | null>(null);
   // Check for existing active session on load
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -113,11 +114,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
    */
   const endSession = async (message?: string): Promise<void> => {
     if (message) {
-      alert(message);
+      setGameAlert(`${message}`);
     }
     setSession(null);
     setCredits(0);
     setGameActive(false);
+    setTimeout(() => {
+      setGameAlert(null);
+    }, 3000);
   };
 
   /**
@@ -206,7 +210,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         updateSession,
         endSession,
         performCashOut,
-        performRoll
+        performRoll,
+        gameAlert,
       }}
     >
       {children}

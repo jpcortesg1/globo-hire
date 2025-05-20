@@ -1,14 +1,7 @@
 "use client";
+import { useGame } from "@/context/GameContext";
 import { useState, useEffect, useRef, ReactNode } from "react";
 
-/**
- * Props interface for the AnimatedLightBox component
- * @property children - The content to be displayed inside the light box
- * @property lightSize - Size of each light in pixels (default: 8)
- * @property lightSpacing - Space between lights in pixels (default: 12)
- * @property animationDuration - Duration of a complete animation cycle in milliseconds (default: 5000)
- * @property lightColors - Array of colors for the lights (default: yellow, red, blue, green)
- */
 interface AnimatedLightBoxProps {
   children: ReactNode;
   lightSize?: number;
@@ -17,16 +10,12 @@ interface AnimatedLightBoxProps {
   lightColors?: string[];
 }
 
-/**
- * AnimatedLightBox component creates a decorative border of animated lights around its children.
- * The lights animate in sequence, creating a casino-like effect with customizable colors and timing.
- */
 const AnimatedLightBox = ({
   children,
   lightSize = 8,
   lightSpacing = 12,
   animationDuration = 5000,
-  lightColors = ["bg-yellow-400", "bg-red-500", "bg-blue-500", "bg-green-500"]
+  lightColors = ["bg-yellow-400", "bg-red-500", "bg-blue-500", "bg-green-500"],
 }: AnimatedLightBoxProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [lights, setLights] = useState<{ top: number, right: number, bottom: number, left: number }>({
@@ -36,7 +25,11 @@ const AnimatedLightBox = ({
     left: 0
   });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
+  const { spinning } = useGame();
+  
+  // Time tracking for animation
+  const [animationTime, setAnimationTime] = useState(0);
+  
   // Calculate number of lights based on container size
   useEffect(() => {
     const calculateLights = () => {
@@ -74,31 +67,42 @@ const AnimatedLightBox = ({
   // Calculate total number of lights for animation
   const totalLights = lights.top + lights.right + lights.bottom + lights.left;
 
-  /**
-   * Determines if a light should be active based on its index and current time
-   * Creates a pattern where 3 consecutive lights are active at any time
-   */
-  const isLightActive = (globalIndex: number, currentTime: number) => {
-    const cyclePosition = (currentTime % animationDuration) / animationDuration;
-    const activePosition = (cyclePosition * totalLights) % totalLights;
+  // Animation logic
+  useEffect(() => {
+    let startTime = Date.now();
+    let frameId: number;
+    
+    const animate = () => {
+      const currentTime = Date.now();
+      const delta = currentTime - startTime;
+      
+      // Use a predictable incrementing time value instead of absolute time
+      setAnimationTime(prev => prev + (spinning ? 3 : 1));
+      
+      frameId = requestAnimationFrame(animate);
+    };
+    
+    frameId = requestAnimationFrame(animate);
+    
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [spinning]);
 
+  // Simplify the light active detection logic
+  const isLightActive = (globalIndex: number) => {
+    const speed = spinning ? 1.5 : 0.5;
+    const cyclePosition = (animationTime * speed) % totalLights;
+    const activeLightCount = spinning ? 5 : 3;
+    
+    // Check if this light should be active in the current animation frame
     return (
-      (globalIndex <= activePosition && globalIndex > activePosition - 3) ||
-      (activePosition < 3 && globalIndex > totalLights + activePosition - 3)
+      // Light is within the active range in the current position
+      (globalIndex <= cyclePosition && globalIndex > cyclePosition - activeLightCount) ||
+      // Handle wrap-around case at the beginning of the array
+      (cyclePosition < activeLightCount && globalIndex > totalLights + cyclePosition - activeLightCount)
     );
   };
-
-  // Animation state
-  const [time, setTime] = useState(Date.now());
-
-  // Update time for animation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(Date.now());
-    }, 50); // Update every 50ms for smooth animation
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div
@@ -111,19 +115,33 @@ const AnimatedLightBox = ({
       {/* Top lights */}
       {topLightsArray.map((_, index) => {
         const globalIndex = index;
-        const isActive = isLightActive(globalIndex, time);
+        const isActive = isLightActive(globalIndex);
+        const lightColor = lightColors[index % lightColors.length];
+        const rgbColor = lightColor.replace('bg-', '');
+        
         return (
           <div
             key={`top-${index}`}
-            className={`absolute rounded-full transition-all duration-300 ${isActive ? lightColors[index % lightColors.length] : "bg-gray-800"
-              } ${isActive ? "opacity-100" : "opacity-40"}`}
+            className={`
+              absolute 
+              rounded-full 
+              transition-opacity 
+              duration-150
+              ${isActive ? lightColor : "bg-gray-800"}
+              ${isActive ? "opacity-100" : "opacity-40"}
+            `}
             style={{
               width: lightSize,
               height: lightSize,
               top: 0,
               left: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
               transform: "translateY(-50%)",
-              boxShadow: isActive ? `0 0 8px 2px ${lightColors[index % lightColors.length].replace('bg-', 'rgb-')}` : "none",
+              boxShadow: isActive 
+                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
+                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
+                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
+                   'rgb(34 197 94)'}`
+                : "none",
             }}
           />
         );
@@ -132,70 +150,128 @@ const AnimatedLightBox = ({
       {/* Right lights */}
       {rightLightsArray.map((_, index) => {
         const globalIndex = lights.top + index;
-        const isActive = isLightActive(globalIndex, time);
+        const isActive = isLightActive(globalIndex);
+        const lightColor = lightColors[index % lightColors.length];
+        const rgbColor = lightColor.replace('bg-', '');
+        
         return (
           <div
             key={`right-${index}`}
-            className={`absolute rounded-full transition-all duration-300 ${isActive ? lightColors[index % lightColors.length] : "bg-gray-800"
-              } ${isActive ? "opacity-100" : "opacity-40"}`}
+            className={`
+              absolute 
+              rounded-full 
+              transition-opacity 
+              duration-150
+              ${isActive ? lightColor : "bg-gray-800"}
+              ${isActive ? "opacity-100" : "opacity-40"}
+            `}
             style={{
               width: lightSize,
               height: lightSize,
               right: 0,
               top: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
               transform: "translateX(50%)",
-              boxShadow: isActive ? `0 0 8px 2px ${lightColors[index % lightColors.length].replace('bg-', 'rgb-')}` : "none",
+              boxShadow: isActive 
+                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
+                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
+                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
+                   'rgb(34 197 94)'}`
+                : "none",
             }}
           />
         );
       })}
 
-      {/* Bottom lights (right to left) */}
+      {/* Bottom lights */}
       {bottomLightsArray.map((_, index) => {
         const reversedIndex = bottomLightsArray.length - 1 - index;
         const globalIndex = lights.top + lights.right + index;
-        const isActive = isLightActive(globalIndex, time);
+        const isActive = isLightActive(globalIndex);
+        const lightColor = lightColors[reversedIndex % lightColors.length];
+        const rgbColor = lightColor.replace('bg-', '');
+        
         return (
           <div
             key={`bottom-${index}`}
-            className={`absolute rounded-full transition-all duration-300 ${isActive ? lightColors[reversedIndex % lightColors.length] : "bg-gray-800"
-              } ${isActive ? "opacity-100" : "opacity-40"}`}
+            className={`
+              absolute 
+              rounded-full 
+              transition-opacity 
+              duration-150
+              ${isActive ? lightColor : "bg-gray-800"}
+              ${isActive ? "opacity-100" : "opacity-40"}
+            `}
             style={{
               width: lightSize,
               height: lightSize,
               bottom: 0,
               right: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
               transform: "translateY(50%)",
-              boxShadow: isActive ? `0 0 8px 2px ${lightColors[reversedIndex % lightColors.length].replace('bg-', 'rgb-')}` : "none",
+              boxShadow: isActive 
+                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
+                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
+                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
+                   'rgb(34 197 94)'}`
+                : "none",
             }}
           />
         );
       })}
 
-      {/* Left lights (bottom to top) */}
+      {/* Left lights */}
       {leftLightsArray.map((_, index) => {
         const reversedIndex = leftLightsArray.length - 1 - index;
         const globalIndex = lights.top + lights.right + lights.bottom + index;
-        const isActive = isLightActive(globalIndex, time);
+        const isActive = isLightActive(globalIndex);
+        const lightColor = lightColors[reversedIndex % lightColors.length];
+        const rgbColor = lightColor.replace('bg-', '');
+        
         return (
           <div
             key={`left-${index}`}
-            className={`absolute rounded-full transition-all duration-300 ${isActive ? lightColors[reversedIndex % lightColors.length] : "bg-gray-800"
-              } ${isActive ? "opacity-100" : "opacity-40"}`}
+            className={`
+              absolute 
+              rounded-full 
+              transition-opacity 
+              duration-150
+              ${isActive ? lightColor : "bg-gray-800"}
+              ${isActive ? "opacity-100" : "opacity-40"}
+            `}
             style={{
               width: lightSize,
               height: lightSize,
               left: 0,
               bottom: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
               transform: "translateX(-50%)",
-              boxShadow: isActive ? `0 0 8px 2px ${lightColors[reversedIndex % lightColors.length].replace('bg-', 'rgb-')}` : "none",
+              boxShadow: isActive 
+                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
+                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
+                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
+                   'rgb(34 197 94)'}`
+                : "none",
             }}
           />
         );
       })}
 
       {/* Content container */}
-      <div className="relative bg-black border border-gray-800 rounded-lg overflow-hidden p-4">
+      <div 
+        className={`
+          relative 
+          bg-black 
+          border 
+          ${spinning ? 'border-yellow-600' : 'border-gray-800'} 
+          rounded-lg 
+          overflow-hidden 
+          p-4
+          ${spinning ? 'shadow-inner shadow-yellow-900/30' : ''}
+          transition-all duration-300
+        `}
+      >
+        {/* Vibrating effect during spinning */}
+        {spinning && (
+          <div className="absolute inset-0 opacity-30 bg-gradient-to-t from-yellow-900/20 to-transparent pointer-events-none animate-pulse-fast"></div>
+        )}
         {children}
       </div>
     </div>

@@ -5,6 +5,7 @@ import AnimatedLightBox from "./AnimatedLightBox";
 import Controls from "./Controls";
 import Reel from "./Reel";
 import { useGame } from "@/context/GameContext";
+import GameAlert from "./GameAlert";
 
 /**
  * SlotMachine component is the main container for the slot machine game
@@ -15,6 +16,7 @@ const SlotMachine = () => {
   return (
     <>
       <StartButton />
+      <GameAlert />
       <div className="flex flex-col items-center justify-center gap-4 h-screen">
         <AnimatedLightBox>
           <Credits />

@@ -64,6 +64,7 @@ body {
 
 /* Flash animation for attention-grabbing elements */
 @keyframes flash {
+
   0%,
   100% {
     opacity: 0;
@@ -119,6 +120,7 @@ body {
 
 /* Symbol glow effect animation */
 @keyframes symbolGlow {
+
   0%,
   100% {
     opacity: 0;
@@ -131,4 +133,20 @@ body {
 
 .animate-symbolGlow {
   animation: symbolGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseFast {
+
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-fast {
+  animation: pulseFast 0.5s ease-in-out infinite;
 }

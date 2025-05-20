@@ -86,7 +86,7 @@ const StartButton = () => {
 
           {/* Button text and loading state */}
           <div className="flex flex-col items-center">
-            <span className="text-sm text-yellow-900 mb-1">Press to Try Your Luck</span>
+            <span className="text-sm text-yellow-900 mb-1">Feeling Lucky?</span>
             {loading ? (
               <div className="flex items-center gap-2">
                 <svg className="animate-spin h-5 w-5 text-yellow-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
