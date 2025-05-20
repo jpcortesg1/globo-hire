@@ -9,19 +9,30 @@ export interface Session {
   credits: number;
   createdAt: string;
   lastUpdated: string;
-  gameHistory: any[];
+  gameHistory: Array<{
+    symbols: string[];
+    win: boolean;
+    payout: number;
+    timestamp: string;
+  }>;
   isActive: boolean;
 }
 
-export interface ApiResponse<T = any> {
+export interface RollResult {
+  symbols: string[];
+  win: boolean;
+  payout: number;
+}
+
+export interface ApiResponse {
   success: boolean;
   session?: Session;
   status?: Session;
-  result?: any;
+  result?: RollResult;
   credits?: number;
   message?: string;
   error?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -35,7 +46,7 @@ export const createSession = async (): Promise<ApiResponse> => {
       headers: { 'Content-Type': 'application/json' },
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to create session.' };
   }
 };
@@ -48,7 +59,7 @@ export const getSessionStatus = async (): Promise<ApiResponse> => {
   try {
     const response = await fetch('/api/session/status');
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to get session status.' };
   }
 };
@@ -64,7 +75,7 @@ export const rollSlots = async (): Promise<ApiResponse> => {
       headers: { 'Content-Type': 'application/json' },
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to roll slots.' };
   }
 };
@@ -80,7 +91,7 @@ export const cashOut = async (): Promise<ApiResponse> => {
       headers: { 'Content-Type': 'application/json' },
     });
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to cash out.' };
   }
 };

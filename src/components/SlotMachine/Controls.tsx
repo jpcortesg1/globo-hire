@@ -7,7 +7,7 @@ import { useGame } from "@/context/GameContext";
  * Includes special "cheating" behavior for the Cash Out button
  */
 const Controls = () => {
-  const { performRoll, performCashOut, credits, loading, gameActive } = useGame();
+  const { performRoll, performCashOut, credits, gameActive } = useGame();
   const [isRolling, setIsRolling] = useState(false);
   const [cashOutStyle, setCashOutStyle] = useState({});
   const [cashOutDisabled, setCashOutDisabled] = useState(false);

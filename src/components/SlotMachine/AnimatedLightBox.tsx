@@ -6,7 +6,6 @@ interface AnimatedLightBoxProps {
   children: ReactNode;
   lightSize?: number;
   lightSpacing?: number;
-  animationDuration?: number;
   lightColors?: string[];
 }
 
@@ -14,7 +13,6 @@ const AnimatedLightBox = ({
   children,
   lightSize = 8,
   lightSpacing = 12,
-  animationDuration = 5000,
   lightColors = ["bg-yellow-400", "bg-red-500", "bg-blue-500", "bg-green-500"],
 }: AnimatedLightBoxProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,7 +22,6 @@ const AnimatedLightBox = ({
     bottom: 0,
     left: 0
   });
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const { spinning } = useGame();
   
   // Time tracking for animation
@@ -38,8 +35,6 @@ const AnimatedLightBox = ({
       const rect = containerRef.current.getBoundingClientRect();
       const width = rect.width;
       const height = rect.height;
-
-      setContainerSize({ width, height });
 
       // Calculate how many lights fit on each side
       const topLights = Math.floor(width / lightSpacing);
@@ -69,13 +64,9 @@ const AnimatedLightBox = ({
 
   // Animation logic
   useEffect(() => {
-    let startTime = Date.now();
     let frameId: number;
     
     const animate = () => {
-      const currentTime = Date.now();
-      const delta = currentTime - startTime;
-      
       // Use a predictable incrementing time value instead of absolute time
       setAnimationTime(prev => prev + (spinning ? 3 : 1));
       

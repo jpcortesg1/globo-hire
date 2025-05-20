@@ -158,7 +158,26 @@ export class GameSession {
    * Reconstructs a GameSession from persisted data.
    * Note: Game history is not fully reconstructed for simplicity.
    */
-  public static fromJSON(data: any): GameSession {
+  public static fromJSON(data: unknown): GameSession {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid data');
+    }
+    if (!('id' in data) || typeof data.id !== 'string') {
+      throw new Error('Invalid data');
+    }
+    if (!('credits' in data) || typeof data.credits !== 'number') {
+      throw new Error('Invalid data');
+    }
+    if (!('createdAt' in data) || typeof data.createdAt !== 'string') {
+      throw new Error('Invalid data');
+    }
+    if (!('lastUpdated' in data) || typeof data.lastUpdated !== 'string') {
+      throw new Error('Invalid data');
+    }
+    if (!('isActive' in data) || typeof data.isActive !== 'boolean') {
+      throw new Error('Invalid data');
+    }
+    
     const session = new GameSession(
       data.id,
       data.credits,

@@ -1,7 +1,7 @@
 import { sessionController } from "@/lib/GameSession/singletons";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const session = await sessionController.createSession();
 

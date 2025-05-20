@@ -1,5 +1,5 @@
 import { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
-import { serialize, parse } from 'cookie';
+import { serialize } from 'cookie';
 import { sign, verify } from 'jsonwebtoken';
 
 // Secret key for signing and verifying session tokens.

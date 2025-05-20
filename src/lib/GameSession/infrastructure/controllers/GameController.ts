@@ -1,6 +1,4 @@
-import { SymbolType } from "../../domain/Symbol";
 import { IRollSlots, IRollSlotsInput } from "../../ports/input/IRollSlots";
-import { IGameSessionRepository } from "../../ports/output/IGameSessionRepository";
 
 /**
  * Controller for handling game actions such as rolling the slot machine.

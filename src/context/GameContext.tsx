@@ -49,7 +49,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           setGameActive(true);
         }
       } catch (err) {
-        // No active session, stay in initial state
+        console.error('Error checking existing session:', err);
       } finally {
         setLoading(false);
       }
@@ -75,6 +75,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setError(newSession.error || 'Failed to create game session');
       }
     } catch (err) {
+      console.error('Error creating session:', err);
       setError('Network error creating session');
     } finally {
       setLoading(false);
@@ -103,6 +104,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return null;
       }
     } catch (err) {
+      console.error('Error updating session:', err);
       setError('Network error updating session');
       return null;
     }
@@ -140,6 +142,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return 0;
       }
     } catch (err) {
+      console.error('Error during cash out:', err);
       setError('Network error during cash out');
       return 0;
     }
@@ -165,12 +168,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // Call roll API
       const result = await rollSlots();
 
-      if (result.success) {
+      if (result.success && result.result && Array.isArray(result.result.symbols)) {
+        const { symbols } = result.result;
         // Show symbols sequentially
-        setTimeout(() => setSymbols([result.result.symbols[0], '', '']), 1000);
-        setTimeout(() => setSymbols([result.result.symbols[0], result.result.symbols[1], '']), 2000);
+        setTimeout(() => setSymbols([symbols[0], '', '']), 1000);
+        setTimeout(() => setSymbols([symbols[0], symbols[1], '']), 2000);
         setTimeout(() => {
-          setSymbols(result.result.symbols);
+          setSymbols(symbols);
 
           // Update session with new credits
           updateSession();
@@ -187,6 +191,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       return result;
     } catch (err) {
+      console.error('Error during roll:', err);
       setError('Network error during roll');
       setSpinning(false);
       return {
