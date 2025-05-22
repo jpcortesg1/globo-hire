@@ -117,6 +117,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
    * Resets all game state and optionally displays a message
    */
   const endSession = async (message?: string): Promise<void> => {
+    setQuantityOfRolls(0);
     if (message) {
       setGameAlert(`${message}`);
     }
@@ -134,6 +135,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
    */
   const performCashOut = async (): Promise<number> => {
     try {
+      setQuantityOfRolls(0);
       const result = await cashOut();
       if (result.success) {
         const cashedOutCredits = result.credits || 0;

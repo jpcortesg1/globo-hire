@@ -87,12 +87,22 @@ const Controls = () => {
 
   /**
    * Disables the cash out button if the quantity of rolls is less than 3
+   * Resets the position of the cash out button if the quantity of rolls is 0
    */
   useEffect(() => {
     if(quantityOfRolls < 2) {
       setCashOutDisabled(true);
     } else {
       setCashOutDisabled(false);
+    }
+    if(quantityOfRolls === 0) {
+      // Reset position reference
+      currentPositionRef.current = { x: 0, y: 0 };
+      // Reset visual position
+      setCashOutStyle({
+        transform: 'translate(0px, 0px)',
+        transition: 'transform 0.3s cubic-bezier(.17,.67,.83,.67)'
+      });
     }
   }, [quantityOfRolls]);
 
