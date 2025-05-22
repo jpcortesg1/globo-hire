@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useGame } from "@/context/GameContext";
 
 /**
@@ -7,12 +7,13 @@ import { useGame } from "@/context/GameContext";
  * Includes special "cheating" behavior for the Cash Out button
  */
 const Controls = () => {
-  const { performRoll, performCashOut, credits, gameActive } = useGame();
+  const { performRoll, performCashOut, credits, gameActive, quantityOfRolls } = useGame();
   const [isRolling, setIsRolling] = useState(false);
   const [cashOutStyle, setCashOutStyle] = useState({});
   const [cashOutDisabled, setCashOutDisabled] = useState(false);
   const [buttonPressed, setButtonPressed] = useState("");
   const rollInProgressRef = useRef(false);
+  const currentPositionRef = useRef({ x: 0, y: 0 });
   
   /**
    * Handles the roll action
@@ -35,7 +36,7 @@ const Controls = () => {
         setIsRolling(false);
         setButtonPressed("");
         rollInProgressRef.current = false;
-      }, 4000); // 4 seconds to cover all reel animations
+      }, 3000); // 4 seconds to cover all reel animations
     } catch (error) {
       console.error("Roll error:", error);
       setIsRolling(false);
@@ -47,6 +48,7 @@ const Controls = () => {
   /**
    * "Cheating" behavior for Cash Out button
    * Randomly moves button or makes it temporarily unclickable
+   * If it jumps, it stays in its new position and can jump again from there
    */
   const handleCashOutHover = () => {
     // 50% chance to jump
@@ -54,8 +56,12 @@ const Controls = () => {
       const randomX = (Math.random() * 600 - 300);
       const randomY = (Math.random() * 200 - 100);
       
+      // Accumulate the new position
+      currentPositionRef.current.x += randomX;
+      currentPositionRef.current.y += randomY;
+      
       setCashOutStyle({
-        transform: `translate(${randomX}px, ${randomY}px)`,
+        transform: `translate(${currentPositionRef.current.x}px, ${currentPositionRef.current.y}px)`,
         transition: 'transform 0.3s cubic-bezier(.17,.67,.83,.67)'
       });
     }
@@ -80,16 +86,15 @@ const Controls = () => {
   };
 
   /**
-   * Resets button position when hover ends
+   * Disables the cash out button if the quantity of rolls is less than 3
    */
-  const handleCashOutLeave = () => {
-    setTimeout(() => {
-      setCashOutStyle({
-        transform: 'translate(0, 0)',
-        transition: 'transform 0.5s cubic-bezier(.17,.67,.83,.67)'
-      });
-    }, 100);
-  };
+  useEffect(() => {
+    if(quantityOfRolls < 2) {
+      setCashOutDisabled(true);
+    } else {
+      setCashOutDisabled(false);
+    }
+  }, [quantityOfRolls]);
 
   return (
     <div className="flex flex-col md:flex-row justify-center items-center gap-6 mt-8 px-4">
@@ -140,8 +145,7 @@ const Controls = () => {
       <button
         onClick={handleCashOut}
         onMouseEnter={handleCashOutHover}
-        onMouseLeave={handleCashOutLeave}
-        disabled={cashOutDisabled || isRolling || !gameActive || credits <= 0}
+        disabled={cashOutDisabled || isRolling || !gameActive || credits <= 0 || quantityOfRolls < 2}
         style={cashOutStyle}
         className={`
           relative

@@ -15,6 +15,7 @@ interface GameContextType {
   symbols: string[];
   spinning: boolean;
   gameAlert: string | null;
+  quantityOfRolls: number;
   startGame: () => Promise<void>;
   updateSession: () => Promise<Session | null>;
   endSession: (message?: string) => Promise<void>;
@@ -37,6 +38,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [symbols, setSymbols] = useState<string[]>(['', '', '']);
   const [spinning, setSpinning] = useState(false);
   const [gameAlert, setGameAlert] = useState<string | null>(null);
+  const [quantityOfRolls, setQuantityOfRolls] = useState(0);
   // Check for existing active session on load
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -164,26 +166,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // Start spinning animation
       setSpinning(true);
       setSymbols(['', '', '']);
+      setQuantityOfRolls((prev) => prev + 1);
 
       // Call roll API
       const result = await rollSlots();
 
       if (result.success && result.result && Array.isArray(result.result.symbols)) {
-        const { symbols } = result.result;
-        // Show symbols sequentially
-        setTimeout(() => setSymbols([symbols[0], '', '']), 1000);
-        setTimeout(() => setSymbols([symbols[0], symbols[1], '']), 2000);
-        setTimeout(() => {
-          setSymbols(symbols);
-
-          // Update session with new credits
-          updateSession();
-
-          // Stop spinning after additional delay
-          setTimeout(() => {
-            setSpinning(false);
-          }, 1000);
-        }, 3000);
+        // Set all symbols at once - Reel component will handle the animation timing
+        setSymbols(result.result.symbols);
+        
+        // Update session immediately to not delay the animation
+        updateSession();
+        setSpinning(false);
       } else {
         // Stop spinning immediately on error
         setSpinning(false);
@@ -217,6 +211,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         performCashOut,
         performRoll,
         gameAlert,
+        quantityOfRolls,
       }}
     >
       {children}

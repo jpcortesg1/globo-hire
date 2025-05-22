@@ -1,12 +1,26 @@
 "use client";
 import { useGame } from "@/context/GameContext";
-import { useState, useEffect, useRef, ReactNode } from "react";
+import { useState, useEffect, useRef, ReactNode, useMemo, useCallback } from "react";
+
+/**
+ * AnimatedLightBox Component
+ * 
+ * A dynamic container that creates a casino-style light box effect with animated LED lights
+ * around its border. The lights animate faster during spinning and create a vibrant,
+ * attention-grabbing effect.
+ * 
+ * Features:
+ * - Responsive LED light grid that adapts to container size
+ * - Dynamic light animation with configurable speed and colors
+ * - Optimized performance using refs and memoization
+ * - Smooth transitions between spinning and idle states
+ */
 
 interface AnimatedLightBoxProps {
   children: ReactNode;
-  lightSize?: number;
-  lightSpacing?: number;
-  lightColors?: string[];
+  lightSize?: number;      // Size of each LED light in pixels
+  lightSpacing?: number;   // Space between lights in pixels
+  lightColors?: string[];  // Array of Tailwind color classes for lights
 }
 
 const AnimatedLightBox = ({
@@ -15,85 +29,212 @@ const AnimatedLightBox = ({
   lightSpacing = 12,
   lightColors = ["bg-yellow-400", "bg-red-500", "bg-blue-500", "bg-green-500"],
 }: AnimatedLightBoxProps) => {
+  // Container reference for calculating light positions
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // State for tracking the number of lights on each side
   const [lights, setLights] = useState<{ top: number, right: number, bottom: number, left: number }>({
     top: 0,
     right: 0,
     bottom: 0,
     left: 0
   });
-  const { spinning } = useGame();
+
+  // External spinning state from game context
+  const { spinning: externalSpinning } = useGame();
   
-  // Time tracking for animation
-  const [animationTime, setAnimationTime] = useState(0);
+  // Internal spinning state for animation control
+  const [internalSpinning, setInternalSpinning] = useState(false);
   
-  // Calculate number of lights based on container size
-  useEffect(() => {
-    const calculateLights = () => {
-      if (!containerRef.current) return;
+  // Refs for managing timers and animation
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const animationTimeRef = useRef(0);
+  const animationFrameRef = useRef<number>(0);
+  const lightsRefs = useRef<HTMLDivElement[]>([]);
 
-      const rect = containerRef.current.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
+  // Memoized total number of lights
+  const totalLights = useMemo(() => 
+    lights.top + lights.right + lights.bottom + lights.left, 
+    [lights]
+  );
 
-      // Calculate how many lights fit on each side
-      const topLights = Math.floor(width / lightSpacing);
-      const rightLights = Math.floor(height / lightSpacing);
-      const bottomLights = Math.floor(width / lightSpacing);
-      const leftLights = Math.floor(height / lightSpacing);
+  // Memoized arrays for each side's lights
+  const lightArrays = useMemo(() => ({
+    top: Array.from({ length: lights.top }, (_, i) => i),
+    right: Array.from({ length: lights.right }, (_, i) => i),
+    bottom: Array.from({ length: lights.bottom }, (_, i) => i),
+    left: Array.from({ length: lights.left }, (_, i) => i)
+  }), [lights]);
 
-      setLights({ top: topLights, right: rightLights, bottom: bottomLights, left: leftLights });
+  // Memoized RGB color mapping for light effects
+  const rgbColors = useMemo(() => {
+    const colorMap: Record<string, string> = {
+      'yellow-400': 'rgb(250 204 21)',
+      'red-500': 'rgb(239 68 68)',
+      'blue-500': 'rgb(59 130 246)',
+      'green-500': 'rgb(34 197 94)'
     };
+    return lightColors.map(color => colorMap[color.replace('bg-', '')] || colorMap['green-500']);
+  }, [lightColors]);
 
-    // Initial calculation
-    calculateLights();
-
-    // Recalculate on window resize
-    window.addEventListener("resize", calculateLights);
-    return () => window.removeEventListener("resize", calculateLights);
-  }, [lightSpacing]);
-
-  // Create arrays of lights for each side
-  const topLightsArray = Array.from({ length: lights.top }, (_, i) => i);
-  const rightLightsArray = Array.from({ length: lights.right }, (_, i) => i);
-  const bottomLightsArray = Array.from({ length: lights.bottom }, (_, i) => i);
-  const leftLightsArray = Array.from({ length: lights.left }, (_, i) => i);
-
-  // Calculate total number of lights for animation
-  const totalLights = lights.top + lights.right + lights.bottom + lights.left;
-
-  // Animation logic
-  useEffect(() => {
-    let frameId: number;
-    
-    const animate = () => {
-      // Use a predictable incrementing time value instead of absolute time
-      setAnimationTime(prev => prev + (spinning ? 3 : 1));
-      
-      frameId = requestAnimationFrame(animate);
-    };
-    
-    frameId = requestAnimationFrame(animate);
-    
-    return () => {
-      cancelAnimationFrame(frameId);
-    };
-  }, [spinning]);
-
-  // Simplify the light active detection logic
-  const isLightActive = (globalIndex: number) => {
-    const speed = spinning ? 1.5 : 0.5;
+  /**
+   * Determines if a light should be active based on its position and current animation time
+   * @param globalIndex - The light's position in the sequence
+   * @param animationTime - Current animation time
+   * @returns boolean indicating if the light should be active
+   */
+  const isLightActive = useCallback((globalIndex: number, animationTime: number) => {
+    const speed = internalSpinning ? 1.5 : 0.5;
     const cyclePosition = (animationTime * speed) % totalLights;
-    const activeLightCount = spinning ? 5 : 3;
+    const activeLightCount = internalSpinning ? 5 : 3;
     
-    // Check if this light should be active in the current animation frame
     return (
-      // Light is within the active range in the current position
       (globalIndex <= cyclePosition && globalIndex > cyclePosition - activeLightCount) ||
-      // Handle wrap-around case at the beginning of the array
       (cyclePosition < activeLightCount && globalIndex > totalLights + cyclePosition - activeLightCount)
     );
-  };
+  }, [internalSpinning, totalLights]);
+
+  /**
+   * Updates light states without causing re-renders
+   * Uses direct DOM manipulation for better performance
+   */
+  const updateLights = useCallback(() => {
+    if (lightsRefs.current.length === 0) return;
+
+    lightsRefs.current.forEach((lightRef, index) => {
+      if (!lightRef) return;
+      
+      const isActive = isLightActive(index, animationTimeRef.current);
+      const colorIndex = index % lightColors.length;
+      const lightColor = lightColors[colorIndex];
+      const rgbColor = rgbColors[colorIndex];
+
+      // Update classes and styles directly
+      if (isActive) {
+        lightRef.className = lightRef.className.replace('bg-gray-800', lightColor).replace('opacity-40', 'opacity-100');
+        lightRef.style.boxShadow = `0 0 ${internalSpinning ? '12px' : '8px'} 2px ${rgbColor}`;
+      } else {
+        lightRef.className = lightRef.className.replace(lightColor, 'bg-gray-800').replace('opacity-100', 'opacity-40');
+        lightRef.style.boxShadow = 'none';
+      }
+    });
+  }, [isLightActive, lightColors, rgbColors, internalSpinning]);
+
+  /**
+   * Manages internal spinning state
+   * Ensures animation lasts exactly 3 seconds regardless of external state changes
+   */
+  useEffect(() => {
+    if (externalSpinning) {
+      setInternalSpinning(true);
+      startTimeRef.current = Date.now();
+      
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      timerRef.current = setTimeout(() => {
+        const elapsedTime = Date.now() - (startTimeRef.current || 0);
+        if (elapsedTime >= 3000) {
+          setInternalSpinning(false);
+        }
+      }, 3000);
+    } else {
+      const elapsedTime = startTimeRef.current ? Date.now() - startTimeRef.current : 0;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          setInternalSpinning(false);
+        }, remainingTime);
+      } else {
+        setInternalSpinning(false);
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [externalSpinning]);
+
+  /**
+   * Calculates the number of lights that fit on each side of the container
+   * Updates on container resize
+   */
+  const calculateLights = useCallback(() => {
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    const topLights = Math.floor(width / lightSpacing);
+    const rightLights = Math.floor(height / lightSpacing);
+    const bottomLights = Math.floor(width / lightSpacing);
+    const leftLights = Math.floor(height / lightSpacing);
+
+    setLights({ top: topLights, right: rightLights, bottom: bottomLights, left: leftLights });
+  }, [lightSpacing]);
+
+  // Initialize and handle resize
+  useEffect(() => {
+    calculateLights();
+    window.addEventListener("resize", calculateLights);
+    return () => window.removeEventListener("resize", calculateLights);
+  }, [calculateLights]);
+
+  /**
+   * Main animation loop
+   * Updates light states on each frame
+   */
+  useEffect(() => {
+    const animate = () => {
+      animationTimeRef.current += (internalSpinning ? 3 : 1);
+      updateLights();
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+    
+    animationFrameRef.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [internalSpinning, updateLights]);
+
+  /**
+   * Creates a light element with proper positioning and styling
+   * @param side - Which side the light belongs to
+   * @param index - Position in the side's sequence
+   * @param globalIndex - Position in the overall sequence
+   * @param style - CSS styles for positioning
+   * @param isReversed - Whether to reverse the color sequence
+   */
+  const createLight = useCallback((
+    side: string, 
+    index: number, 
+    globalIndex: number, 
+    style: React.CSSProperties
+  ) => {
+    return (
+      <div
+        key={`${side}-${index}`}
+        ref={(el) => {
+          if (el) lightsRefs.current[globalIndex] = el;
+        }}
+        className={`absolute rounded-full transition-opacity duration-150 bg-gray-800 opacity-40`}
+        style={{
+          width: lightSize,
+          height: lightSize,
+          ...style
+        }}
+      />
+    );
+  }, [lightSize]);
 
   return (
     <div
@@ -104,163 +245,57 @@ const AnimatedLightBox = ({
       }}
     >
       {/* Top lights */}
-      {topLightsArray.map((_, index) => {
-        const globalIndex = index;
-        const isActive = isLightActive(globalIndex);
-        const lightColor = lightColors[index % lightColors.length];
-        const rgbColor = lightColor.replace('bg-', '');
-        
-        return (
-          <div
-            key={`top-${index}`}
-            className={`
-              absolute 
-              rounded-full 
-              transition-opacity 
-              duration-150
-              ${isActive ? lightColor : "bg-gray-800"}
-              ${isActive ? "opacity-100" : "opacity-40"}
-            `}
-            style={{
-              width: lightSize,
-              height: lightSize,
-              top: 0,
-              left: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
-              transform: "translateY(-50%)",
-              boxShadow: isActive 
-                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
-                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
-                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
-                   'rgb(34 197 94)'}`
-                : "none",
-            }}
-          />
-        );
-      })}
+      {lightArrays.top.map((_, index) => 
+        createLight('top', index, index, {
+          top: 0,
+          left: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
+          transform: "translateY(-50%)",
+        })
+      )}
 
       {/* Right lights */}
-      {rightLightsArray.map((_, index) => {
-        const globalIndex = lights.top + index;
-        const isActive = isLightActive(globalIndex);
-        const lightColor = lightColors[index % lightColors.length];
-        const rgbColor = lightColor.replace('bg-', '');
-        
-        return (
-          <div
-            key={`right-${index}`}
-            className={`
-              absolute 
-              rounded-full 
-              transition-opacity 
-              duration-150
-              ${isActive ? lightColor : "bg-gray-800"}
-              ${isActive ? "opacity-100" : "opacity-40"}
-            `}
-            style={{
-              width: lightSize,
-              height: lightSize,
-              right: 0,
-              top: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
-              transform: "translateX(50%)",
-              boxShadow: isActive 
-                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
-                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
-                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
-                   'rgb(34 197 94)'}`
-                : "none",
-            }}
-          />
-        );
-      })}
+      {lightArrays.right.map((_, index) => 
+        createLight('right', index, lights.top + index, {
+          right: 0,
+          top: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
+          transform: "translateX(50%)",
+        })
+      )}
 
       {/* Bottom lights */}
-      {bottomLightsArray.map((_, index) => {
-        const reversedIndex = bottomLightsArray.length - 1 - index;
-        const globalIndex = lights.top + lights.right + index;
-        const isActive = isLightActive(globalIndex);
-        const lightColor = lightColors[reversedIndex % lightColors.length];
-        const rgbColor = lightColor.replace('bg-', '');
-        
-        return (
-          <div
-            key={`bottom-${index}`}
-            className={`
-              absolute 
-              rounded-full 
-              transition-opacity 
-              duration-150
-              ${isActive ? lightColor : "bg-gray-800"}
-              ${isActive ? "opacity-100" : "opacity-40"}
-            `}
-            style={{
-              width: lightSize,
-              height: lightSize,
-              bottom: 0,
-              right: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
-              transform: "translateY(50%)",
-              boxShadow: isActive 
-                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
-                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
-                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
-                   'rgb(34 197 94)'}`
-                : "none",
-            }}
-          />
-        );
-      })}
+      {lightArrays.bottom.map((_, index) => 
+        createLight('bottom', index, lights.top + lights.right + index, {
+          bottom: 0,
+          right: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
+          transform: "translateY(50%)",
+        })
+      )}
 
       {/* Left lights */}
-      {leftLightsArray.map((_, index) => {
-        const reversedIndex = leftLightsArray.length - 1 - index;
-        const globalIndex = lights.top + lights.right + lights.bottom + index;
-        const isActive = isLightActive(globalIndex);
-        const lightColor = lightColors[reversedIndex % lightColors.length];
-        const rgbColor = lightColor.replace('bg-', '');
-        
-        return (
-          <div
-            key={`left-${index}`}
-            className={`
-              absolute 
-              rounded-full 
-              transition-opacity 
-              duration-150
-              ${isActive ? lightColor : "bg-gray-800"}
-              ${isActive ? "opacity-100" : "opacity-40"}
-            `}
-            style={{
-              width: lightSize,
-              height: lightSize,
-              left: 0,
-              bottom: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
-              transform: "translateX(-50%)",
-              boxShadow: isActive 
-                ? `0 0 ${spinning ? '12px' : '8px'} 2px ${rgbColor === 'yellow-400' ? 'rgb(250 204 21)' : 
-                   rgbColor === 'red-500' ? 'rgb(239 68 68)' : 
-                   rgbColor === 'blue-500' ? 'rgb(59 130 246)' : 
-                   'rgb(34 197 94)'}`
-                : "none",
-            }}
-          />
-        );
-      })}
+      {lightArrays.left.map((_, index) => 
+        createLight('left', index, lights.top + lights.right + lights.bottom + index, {
+          left: 0,
+          bottom: `${(index * lightSpacing) + (lightSpacing / 2)}px`,
+          transform: "translateX(-50%)",
+        })
+      )}
 
-      {/* Content container */}
+      {/* Content container with dynamic border and effects */}
       <div 
         className={`
           relative 
           bg-black 
           border 
-          ${spinning ? 'border-yellow-600' : 'border-gray-800'} 
+          ${internalSpinning ? 'border-yellow-600' : 'border-gray-800'} 
           rounded-lg 
-          overflow-hidden 
+          overflow-visible 
           p-4
-          ${spinning ? 'shadow-inner shadow-yellow-900/30' : ''}
+          ${internalSpinning ? 'shadow-inner shadow-yellow-900/30' : ''}
           transition-all duration-300
         `}
       >
         {/* Vibrating effect during spinning */}
-        {spinning && (
+        {internalSpinning && (
           <div className="absolute inset-0 opacity-30 bg-gradient-to-t from-yellow-900/20 to-transparent pointer-events-none animate-pulse-fast"></div>
         )}
         {children}

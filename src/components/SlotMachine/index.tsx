@@ -12,7 +12,7 @@ import GameAlert from "./GameAlert";
  * Integrates all game components and manages their layout
  */
 const SlotMachine = () => {
-  const { symbols, spinning } = useGame();
+  const { symbols } = useGame();
   return (
     <>
       <StartButton />
@@ -22,9 +22,9 @@ const SlotMachine = () => {
           <Credits />
           {/* Reels container with sequential animation delays */}
           <div className="flex justify-center items-center my-6 bg-black/30 p-6 rounded-xl">
-            <Reel symbol={symbols[0] || ''} spinning={spinning} delay={1000} />
-            <Reel symbol={symbols[1] || ''} spinning={spinning} delay={2000} />
-            <Reel symbol={symbols[2] || ''} spinning={spinning} delay={3000} />
+            <Reel symbol={symbols[0] || ''} delay={1000} />
+            <Reel symbol={symbols[1] || ''} delay={2000} />
+            <Reel symbol={symbols[2] || ''} delay={3000} />
           </div>
           <Controls />
         </AnimatedLightBox>

@@ -1,4 +1,5 @@
 "use client";
+import { useGame } from '@/context/GameContext';
 import { useState, useEffect, useRef } from 'react';
 
 /**
@@ -21,7 +22,6 @@ const symbolMap: Record<string, string> = {
  */
 interface ReelProps {
   symbol: string;
-  spinning: boolean;
   delay: number;
   onStop?: () => void;
 }
@@ -30,9 +30,10 @@ interface ReelProps {
  * Reel component represents a single slot machine reel
  * Handles spinning animation and symbol display
  */
-const Reel = ({ symbol, spinning, delay, onStop }: ReelProps) => {
+const Reel = ({ symbol, delay, onStop }: ReelProps) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const stopCalledRef = useRef(false);
+  const { spinning } = useGame();
   const prevSpinningRef = useRef(spinning);
 
   useEffect(() => {
