@@ -7,14 +7,25 @@ import { useState, useEffect } from "react";
  * Includes animations for credit changes and rolling state
  */
 const Credits = () => {
-  const { credits } = useGame();
+  const { credits, spinning, quantityOfRolls } = useGame();
   const [displayCredits, setDisplayCredits] = useState(credits);
-  const [prevCreditsRef, setPrevCreditsRef] = useState(credits);
+  const [prevCredits, setPrevCredits] = useState(credits);
   
   useEffect(() => {
-    setDisplayCredits(credits);    
-    setPrevCreditsRef(credits);
-  }, [credits, prevCreditsRef]);
+    // If credits decreased (loss) OR game just started, update immediately
+    if (credits < prevCredits || quantityOfRolls === 0) {
+      setDisplayCredits(credits);
+    }
+    // If credits increased (win), wait for spinning to finish
+    else if (credits > prevCredits && !spinning) {
+      const timer = setTimeout(() => {
+        setDisplayCredits(credits);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+    // Update previous credits reference
+    setPrevCredits(credits);
+  }, [credits, prevCredits, spinning, quantityOfRolls]);
   
   return (
     <div className="relative flex flex-col items-center my-4">
