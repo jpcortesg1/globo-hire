@@ -17,7 +17,6 @@ export class RollSlots implements IRollSlots {
    * Throws if the session is not found, not active, or credits are insufficient.
    */
   async execute(input: IRollSlotsInput): Promise<IRollSlotsOutput> {
-    console.log('Executing roll for session:', input.sessionId);
     const session = await this.sessionRepository.findById(input.sessionId);
     if (!session) {
       throw new Error('Session not found');

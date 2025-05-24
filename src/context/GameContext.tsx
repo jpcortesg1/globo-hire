@@ -48,7 +48,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (status.success && status.status && status.status.isActive) {
           setSession(status.status);
           setCredits(status.status.credits);
-          setGameActive(true);
+          if (status.status.credits > 0) {
+            setGameActive(true);
+          }else{
+            await endSession('Game over! You ran out of credits.');
+          }
         }
       } catch (err) {
         console.error('Error checking existing session:', err);
@@ -95,9 +99,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setSession(status.status);
         setCredits(status.status.credits);
 
-        // End session if credits reach zero
+        // End session if credits reach zero, but wait for spinning to finish
         if (status.status.credits <= 0) {
-          await endSession('Game over! You ran out of credits.');
+          setTimeout(async () => {
+            await endSession('Game over! You ran out of credits.');
+          }, 3000);
         }
 
         return status.status;
@@ -176,7 +182,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (result.success && result.result && Array.isArray(result.result.symbols)) {
         // Set all symbols at once - Reel component will handle the animation timing
         setSymbols(result.result.symbols);
-        
+
         // Update session immediately to not delay the animation
         updateSession();
         setSpinning(false);

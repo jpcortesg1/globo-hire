@@ -41,10 +41,10 @@ export interface ApiResponse {
  */
 export const createSession = async (): Promise<ApiResponse> => {
   try {
-    const response = await fetch('/api/session/create', {
-      method: 'POST',
+  const response = await fetch('/api/session/create', {
+    method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    });
+  });
     return await response.json();
   } catch {
     return { success: false, error: 'Failed to create session.' };
@@ -57,7 +57,7 @@ export const createSession = async (): Promise<ApiResponse> => {
  */
 export const getSessionStatus = async (): Promise<ApiResponse> => {
   try {
-    const response = await fetch('/api/session/status');
+  const response = await fetch('/api/session/status');
     return await response.json();
   } catch {
     return { success: false, error: 'Failed to get session status.' };
@@ -70,10 +70,10 @@ export const getSessionStatus = async (): Promise<ApiResponse> => {
  */
 export const rollSlots = async (): Promise<ApiResponse> => {
   try {
-    const response = await fetch('/api/game/roll', {
-      method: 'POST',
+  const response = await fetch('/api/game/roll', {
+    method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    });
+  });
     return await response.json();
   } catch {
     return { success: false, error: 'Failed to roll slots.' };
@@ -86,10 +86,10 @@ export const rollSlots = async (): Promise<ApiResponse> => {
  */
 export const cashOut = async (): Promise<ApiResponse> => {
   try {
-    const response = await fetch('/api/session/cashout', {
-      method: 'POST',
+  const response = await fetch('/api/session/cashout', {
+    method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    });
+  });
     return await response.json();
   } catch {
     return { success: false, error: 'Failed to cash out.' };
