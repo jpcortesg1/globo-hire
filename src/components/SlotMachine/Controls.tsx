@@ -129,7 +129,7 @@ const Controls = () => {
           ${buttonPressed === "roll" ? 'translate-y-1 scale-[0.98]' : 'translate-y-0'}
           ${isRolling || !gameActive || credits < 1 ? 
             'bg-gray-600 text-gray-400 cursor-not-allowed' : 
-            'bg-gradient-to-b from-red-500 to-red-700 text-white hover:from-red-400 hover:to-red-600'
+            'bg-gradient-to-b from-red-500 to-red-700 text-white hover:from-red-400 hover:to-red-600 cursor-pointer'
           }
         `}
       >
@@ -174,7 +174,7 @@ const Controls = () => {
           ${buttonPressed === "cashout" ? 'translate-y-1 scale-[0.98]' : 'translate-y-0'}
           ${cashOutDisabled || isRolling || !gameActive || credits <= 0 ? 
             'bg-gray-600 text-gray-400 cursor-not-allowed' : 
-            'bg-gradient-to-b from-green-500 to-green-700 text-white hover:from-green-400 hover:to-green-600'
+            'bg-gradient-to-b from-green-500 to-green-700 text-white hover:from-green-400 hover:to-green-600 cursor-pointer'
           }
         `}
       >
